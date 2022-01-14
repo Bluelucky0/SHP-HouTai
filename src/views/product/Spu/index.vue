@@ -3,12 +3,18 @@
     <el-card style="margin: 20px 0">
       <CategorySelect
         @getCategoryId="categoryId"
-        :show="!show"
+        :show="scene != 0"
       ></CategorySelect>
     </el-card>
     <el-card>
       <div v-show="scene == 0">
-        <el-button type="primary" icon="el-icon-plus">添加Spu</el-button>
+        <el-button
+          type="primary"
+          icon="el-icon-plus"
+          :disabled="!category3Id"
+          @click="addSPU"
+          >添加Spu</el-button
+        >
         <el-table style="width: 100%" border :data="records">
           <el-table-column type="index" label="序号" width="80" align="center">
           </el-table-column>
@@ -23,6 +29,7 @@
                 icon="el-icon-plus"
                 size="mini"
                 title="添加sku"
+                @click="addSku(row)"
               >
               </hint-button>
               <hint-button
@@ -30,6 +37,7 @@
                 icon="el-icon-edit"
                 size="mini"
                 title="修改spu"
+                @click="updateSpu(row)"
               ></hint-button>
               <hint-button
                 type="info"
@@ -37,12 +45,18 @@
                 size="mini"
                 title="查看当前spu的所有sku"
               ></hint-button>
-              <hint-button
-                type="danger"
-                icon="el-icon-delete"
-                size="mini"
-                title="删除spu"
-              ></hint-button>
+              <el-popconfirm
+                title="这是一段内容确定删除吗？"
+                @onConfirm="deleteSpu(row)"
+              >
+                <hint-button
+                  type="danger"
+                  icon="el-icon-delete"
+                  size="mini"
+                  title="删除spu"
+                  slot="reference"
+                ></hint-button>
+              </el-popconfirm>
             </template>
           </el-table-column>
         </el-table>
@@ -58,8 +72,16 @@
         >
         </el-pagination>
       </div>
-      <SkuForm v-show="scene == 1"></SkuForm>
-      <SpuForm v-show="scene == 2"></SpuForm>
+      <SpuForm
+        v-show="scene == 1"
+        @changeScene="changeScene"
+        ref="spu"
+      ></SpuForm>
+      <SkuForm
+        v-show="scene == 2"
+        ref="sku"
+        @changeScene="changeScenes"
+      ></SkuForm>
     </el-card>
   </div>
 </template>
@@ -69,18 +91,17 @@ import SkuForm from "./SkuForm";
 import SpuForm from "./SpuForm";
 export default {
   name: "Spu",
-  compoments: { SkuForm, SpuForm },
+  components: { SkuForm, SpuForm },
   data() {
     return {
       category1Id: "",
       category2Id: "",
       category3Id: "",
-      show: true,
       page: 1,
       limit: 3,
       records: [],
       total: 0,
-      //三个状态切换 0：spu页面 1：添加或修改sku页面 3：spu页面
+      //三个状态切换 0：spu页面 1：添加或修改sku页面 2：spu页面
       scene: 0,
     };
   },
@@ -112,6 +133,43 @@ export default {
     handleSizeChange(limit) {
       this.limit = limit;
       this.getSpuList();
+    },
+    addSPU() {
+      this.scene = 1;
+      //获取到子组件发请求
+      this.$refs.spu.addSpuData(this.category3Id);
+    },
+    updateSpu(row) {
+      this.scene = 1;
+      this.$refs.spu.getSpuList(row);
+    },
+    changeScene({ scene, flag }) {
+      //scene:场景  flag：判断是添加还是修改
+      this.scene = scene;
+      //切换场景后，要重新发请求渲染数据
+      if (flag == "修改") {
+        //修改--保持在当前页  添加---回到第一要务
+        this.getSpuList(this.page);
+      } else {
+        this.getSpuList();
+      }
+    },
+    //删除spu
+    async deleteSpu(row) {
+      let result = await this.$API.spu.reqDeleteSpu(row.id);
+      if (result.code == 200) {
+        this.$message({ type: "success", message: "删除成功" });
+        this.getSpuList(this.records.length > 1 ? this.page : this.page - 1);
+      }
+    },
+    //添加sku属性
+    addSku(row) {
+      this.scene = 2;
+      //通知子组件去请求数据
+      this.$refs.sku.getData(this.category1Id, this.category2Id, row);
+    },
+    changeScenes(scene) {
+      this.scene = scene;
     },
   },
 };
