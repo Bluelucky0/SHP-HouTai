@@ -43,6 +43,7 @@
                 type="info"
                 icon="el-icon-info"
                 size="mini"
+                @click="lookSpu(row)"
                 title="查看当前spu的所有sku"
               ></hint-button>
               <el-popconfirm
@@ -82,6 +83,35 @@
         ref="sku"
         @changeScene="changeScenes"
       ></SkuForm>
+
+      <el-dialog
+        :title="`${spu.spuName}的所有sku列表`"
+        :visible.sync="dialogTableVisible"
+        :before-close="close"
+      >
+        <el-table
+          :data="skuList"
+          style="width: 100%"
+          border
+          v-loading="loading"
+        >
+          <el-table-column prop="skuName" label="名称" width="width">
+          </el-table-column>
+          <el-table-column prop="price" label="价格" width="width">
+          </el-table-column>
+          <el-table-column prop="weight" label="重量" width="width">
+          </el-table-column>
+          <el-table-column prop="prop" label="默认图片" width="width">
+            <template slot-scope="{ row, $index }">
+              <img
+                :src="row.skuDefaultImg"
+                alt=""
+                style="width: 100px; height: 100px"
+              />
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -103,6 +133,10 @@ export default {
       total: 0,
       //三个状态切换 0：spu页面 1：添加或修改sku页面 2：spu页面
       scene: 0,
+      dialogTableVisible: false,
+      spu: {},
+      skuList: [],
+      loading: true,
     };
   },
   methods: {
@@ -170,6 +204,24 @@ export default {
     },
     changeScenes(scene) {
       this.scene = scene;
+    },
+    //查看所有的sku列表
+    async lookSpu(spu) {
+      this.dialogTableVisible = true;
+      this.spu = spu;
+      //发请求
+      let result = await this.$API.spu.reqSkuList(spu.id);
+      console.log(result);
+      if (result.code == 200) {
+        this.skuList = result.data;
+        this.loading = false;
+      }
+    },
+    //关闭对话框时打开loading效果并清除上一次的数据
+    close(done) {
+      this.loading = true;
+      this.skuList = [];
+      done();
     },
   },
 };

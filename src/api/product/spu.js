@@ -72,3 +72,9 @@ export const reqAddSku = (skuInfo) =>request({
     method:'post',
     data:skuInfo
 })
+
+//获取查看所有sku列表的sku列表
+export const reqSkuList = (spuId) =>request({
+    url:`/admin/product/findBySpuId/${spuId}`,
+    method:'get'
+})
